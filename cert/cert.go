@@ -35,7 +35,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"math/big"
@@ -72,33 +71,8 @@ func newSerialNumber() (serialNumber *big.Int) {
 // CreateCSR creates a Certificate Signing Request returning certData with CSR.
 //
 // The CSR is also stored in $CAPATH with extension .csr
-func CreateCSR(CACommonName, commonName, country, province, locality, organization, organizationalUnit, emailAddresses string, dnsNames []string, priv *rsa.PrivateKey, creationType storage.CreationType) (csr []byte, err error) {
-	var oidEmailAddress = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 1}
-
-	subject := pkix.Name{
-		CommonName:         commonName,
-		Country:            []string{country},
-		Province:           []string{province},
-		Locality:           []string{locality},
-		Organization:       []string{organization},
-		OrganizationalUnit: []string{organizationalUnit},
-	}
-
-	rawSubj := subject.ToRDNSequence()
-	rawSubj = append(rawSubj, []pkix.AttributeTypeAndValue{
-		{Type: oidEmailAddress, Value: emailAddresses},
-	})
-	asn1Subj, _ := asn1.Marshal(rawSubj)
-	template := x509.CertificateRequest{
-		RawSubject:         asn1Subj,
-		EmailAddresses:     []string{emailAddresses},
-		SignatureAlgorithm: x509.SHA256WithRSA,
-	}
-
-	dnsNames = append(dnsNames, commonName)
-	template.DNSNames = dnsNames
-
-	csr, err = x509.CreateCertificateRequest(rand.Reader, &template, priv)
+func CreateCSR(CACommonName string, commonName string, certRequest *x509.CertificateRequest, priv *rsa.PrivateKey, creationType storage.CreationType) (csr []byte, err error) {
+	csr, err = x509.CreateCertificateRequest(rand.Reader, certRequest, priv)
 	if err != nil {
 		return csr, err
 	}
@@ -174,16 +148,9 @@ func LoadParentCACertificate(commonName string) (certificate *x509.Certificate, 
 
 // CreateRootCert creates a Root CA Certificate (self-signed)
 func CreateRootCert(
-	CACommonName,
-	commonName,
-	country,
-	province,
-	locality,
-	organization,
-	organizationalUnit,
-	emailAddresses string,
-	valid int,
-	dnsNames []string,
+	CACommonName string,
+	commonName string,
+	caCert *x509.Certificate,
 	privateKey *rsa.PrivateKey,
 	publicKey *rsa.PublicKey,
 	creationType storage.CreationType,
@@ -191,14 +158,7 @@ func CreateRootCert(
 	cert, err = CreateCACert(
 		CACommonName,
 		commonName,
-		country,
-		province,
-		locality,
-		organization,
-		organizationalUnit,
-		emailAddresses,
-		valid,
-		dnsNames,
+		caCert,
 		privateKey,
 		nil, // parentPrivateKey
 		nil, // parentCertificate
@@ -213,46 +173,15 @@ func CreateRootCert(
 // parentPrivateKey and parentCertificate parameters as nil. When creating an
 // intermediate CA certificates, provide parentPrivateKey and parentCertificate
 func CreateCACert(
-	CACommonName,
-	commonName,
-	country,
-	province,
-	locality,
-	organization,
-	organizationalUnit,
-	emailAddresses string,
-	validDays int,
-	dnsNames []string,
-	privateKey,
+	CACommonName string,
+	commonName string,
+	caCert *x509.Certificate,
+	privateKey *rsa.PrivateKey,
 	parentPrivateKey *rsa.PrivateKey,
 	parentCertificate *x509.Certificate,
 	publicKey *rsa.PublicKey,
 	creationType storage.CreationType,
 ) (cert []byte, err error) {
-	if validDays == 0 {
-		validDays = DefaultValidCert
-	}
-	caCert := &x509.Certificate{
-		SerialNumber: newSerialNumber(),
-		Subject: pkix.Name{
-			CommonName:         commonName,
-			Organization:       []string{organization},
-			OrganizationalUnit: []string{organizationalUnit},
-			Country:            []string{country},
-			Province:           []string{province},
-			Locality:           []string{locality},
-			// TODO: StreetAddress: []string{"ADDRESS"},
-			// TODO: PostalCode:    []string{"POSTAL_CODE"},
-		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(0, 0, validDays),
-		IsCA:                  true,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		BasicConstraintsValid: true,
-	}
-	dnsNames = append(dnsNames, commonName)
-	caCert.DNSNames = dnsNames
 
 	signingPrivateKey := privateKey
 	if parentPrivateKey != nil {

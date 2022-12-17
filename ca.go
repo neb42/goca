@@ -22,6 +22,7 @@ const (
 	certExtension string = ".crt"
 	csrExtension  string = ".csr"
 	crlExtension  string = ".crl"
+	keyBitSize    int    = 2048
 )
 
 // A Identity represents the Certificate Authority Identity Information
@@ -72,7 +73,7 @@ var ErrCertRevoked = errors.New("the requested Certificate is already revoked")
 
 var ErrParentCommonNameNotSpecified = errors.New("parent common name is empty when creating an intermediate CA certificate")
 
-func (c *CA) create(commonName, parentCommonName string, id Identity) error {
+func (c *CA) create(commonName, parentCommonName string, certifiate *x509.Certificate, intermediate bool) error {
 
 	caData := CAData{}
 
@@ -93,10 +94,6 @@ func (c *CA) create(commonName, parentCommonName string, id Identity) error {
 		err             error
 	)
 
-	if id.Organization == "" || id.OrganizationalUnit == "" || id.Country == "" || id.Locality == "" || id.Province == "" {
-		return ErrCAMissingInfo
-	}
-
 	if err := storage.MakeFolder(os.Getenv("CAPATH"), caDir); err != nil {
 		return err
 	}
@@ -105,7 +102,7 @@ func (c *CA) create(commonName, parentCommonName string, id Identity) error {
 		return err
 	}
 
-	caKeys, err := key.CreateKeys(commonName, commonName, storage.CreationTypeCA, id.KeyBitSize)
+	caKeys, err := key.CreateKeys(commonName, commonName, storage.CreationTypeCA, keyBitSize)
 	if err != nil {
 		return err
 	}
@@ -126,19 +123,12 @@ func (c *CA) create(commonName, parentCommonName string, id Identity) error {
 	caData.publicKey = caKeys.PublicKey
 	caData.PublicKey = string(publicKeyString)
 
-	if !id.Intermediate {
+	if !intermediate {
 		caData.IsIntermediate = false
 		certBytes, err = cert.CreateRootCert(
 			commonName,
 			commonName,
-			id.Country,
-			id.Province,
-			id.Locality,
-			id.Organization,
-			id.OrganizationalUnit,
-			id.EmailAddresses,
-			id.Valid,
-			id.DNSNames,
+			certifiate,
 			privKey,
 			pubKey,
 			storage.CreationTypeCA,
@@ -160,14 +150,7 @@ func (c *CA) create(commonName, parentCommonName string, id Identity) error {
 		certBytes, err = cert.CreateCACert(
 			commonName,
 			commonName,
-			id.Country,
-			id.Province,
-			id.Locality,
-			id.Organization,
-			id.OrganizationalUnit,
-			id.EmailAddresses,
-			id.Valid,
-			id.DNSNames,
+			certifiate,
 			privKey,
 			parentPrivateKey,
 			parentCertificate,
@@ -335,7 +318,7 @@ func (c *CA) signCSR(csr x509.CertificateRequest, valid int) (certificate Certif
 
 }
 
-func (c *CA) issueCertificate(commonName string, id Identity) (certificate Certificate, err error) {
+func (c *CA) issueCertificate(commonName string, certRequest *x509.CertificateRequest) (certificate Certificate, err error) {
 
 	var (
 		caCertsDir      string = filepath.Join(c.CommonName, "certs")
@@ -368,7 +351,7 @@ func (c *CA) issueCertificate(commonName string, id Identity) (certificate Certi
 	certificate.publicKey = *pubKey
 	certificate.PublicKey = string(publicKeyString)
 
-	csrBytes, err := cert.CreateCSR(c.CommonName, commonName, id.Country, id.Province, id.Locality, id.Organization, id.OrganizationalUnit, id.EmailAddresses, id.DNSNames, privKey, storage.CreationTypeCertificate)
+	csrBytes, err := cert.CreateCSR(c.CommonName, commonName, certRequest, privKey, storage.CreationTypeCertificate)
 	if err != nil {
 		return certificate, err
 	}

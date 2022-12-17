@@ -70,18 +70,18 @@ func List() []string {
 }
 
 // New creat new Certificate Authority
-func New(commonName string, identity Identity) (ca CA, err error) {
-	ca, err = NewCA(commonName, "", identity)
+func New(commonName string, cert *x509.Certificate) (ca CA, err error) {
+	ca, err = NewCA(commonName, "", cert)
 	return ca, err
 }
 
 // New create a new Certificate Authority
-func NewCA(commonName, parentCommonName string, identity Identity) (ca CA, err error) {
+func NewCA(commonName, parentCommonName string, cert *x509.Certificate) (ca CA, err error) {
 	ca = CA{
 		CommonName: commonName,
 	}
 
-	err = ca.create(commonName, parentCommonName, identity)
+	err = ca.create(commonName, parentCommonName, cert, parentCommonName == "")
 	if err != nil {
 		return ca, err
 	}
@@ -178,9 +178,9 @@ func (c *CA) SignCSR(csr x509.CertificateRequest, valid int) (certificate Certif
 // IssueCertificate creates a new certificate
 //
 // It is import create an Identity{} with Certificate Client/Server information.
-func (c *CA) IssueCertificate(commonName string, id Identity) (certificate Certificate, err error) {
+func (c *CA) IssueCertificate(commonName string, certRequest *x509.CertificateRequest) (certificate Certificate, err error) {
 
-	certificate, err = c.issueCertificate(commonName, id)
+	certificate, err = c.issueCertificate(commonName, certRequest)
 
 	return certificate, err
 }
