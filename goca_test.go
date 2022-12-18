@@ -1,10 +1,14 @@
 package goca
 
 import (
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 const CaTestFolder string = "./DoNotUseThisCAPATHTestOnly"
@@ -21,17 +25,24 @@ func TestFunctionalRootCACreation(t *testing.T) {
 	os.Setenv("CAPATH", CaTestFolder)
 	os.Setenv("GOCATEST", "true")
 
-	rootCAIdentity := Identity{
-		Organization:       "GO CA Root Company Inc.",
-		OrganizationalUnit: "Certificates Management",
-		Country:            "NL",
-		Locality:           "Noord-Brabant",
-		Province:           "Veldhoven",
-		Intermediate:       false,
-		DNSNames:           []string{"www.go-root.ca", "secure.go-root.ca"},
+	cert := x509.Certificate{
+		SerialNumber: big.NewInt(1234),
+		Subject: pkix.Name{
+			Organization:       []string{"GO CA Root Company Inc."},
+			OrganizationalUnit: []string{"Certificates Management"},
+			Country:            []string{"NL"},
+			Locality:           []string{"Noord-Brabant"},
+			Province:           []string{"Veldhoven"},
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().AddDate(10, 0, 0),
+		IsCA:        true,
+		DNSNames:    []string{"www.go-root.ca", "secure.go-root.ca"},
+		ExtKeyUsage: []x509.ExtKeyUsage{},
+		KeyUsage:    x509.KeyUsageCRLSign | x509.KeyUsageCertSign,
 	}
 
-	RootCompanyCA, err := New("go-root.ca", rootCAIdentity)
+	RootCompanyCA, err := New("go-root.ca", &cert)
 	if err != nil {
 		t.Errorf("Failing to create the CA")
 	}
@@ -59,16 +70,24 @@ func TestFunctionalRootCACreation(t *testing.T) {
 func TestFunctionalIntermediateCACreation(t *testing.T) {
 	os.Setenv("CAPATH", CaTestFolder)
 
-	intermediateCAIdentity := Identity{
-		Organization:       "Intermediate CA Company Inc.",
-		OrganizationalUnit: "Intermediate Certificates Management",
-		Country:            "NL",
-		Locality:           "Noord-Brabant",
-		Province:           "Veldhoven",
-		Intermediate:       true,
+	cert := x509.Certificate{
+		SerialNumber: big.NewInt(1234),
+		Subject: pkix.Name{
+			Organization:       []string{"GO CA Intermediate Company Inc."},
+			OrganizationalUnit: []string{"Certificates Management"},
+			Country:            []string{"NL"},
+			Locality:           []string{"Noord-Brabant"},
+			Province:           []string{"Veldhoven"},
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().AddDate(10, 0, 0),
+		IsCA:        true,
+		DNSNames:    []string{"www.go-intermediate.ca", "secure.go-intermediate.ca"},
+		ExtKeyUsage: []x509.ExtKeyUsage{},
+		KeyUsage:    x509.KeyUsageCRLSign | x509.KeyUsageCertSign,
 	}
 
-	IntermediateCA, err := NewCA("go-intermediate.ca", "go-root.ca", intermediateCAIdentity)
+	IntermediateCA, err := NewCA("go-intermediate.ca", "go-root.ca", &cert)
 	if err != nil {
 		t.Log(err)
 		t.Errorf("Failing to create the CA")
@@ -98,14 +117,15 @@ func TestFunctionalListCAs(t *testing.T) {
 }
 
 func TestFunctionalRootCAIssueNewCertificate(t *testing.T) {
-	intranteIdentity := Identity{
-		Organization:       "SFTP Server CA Company Inc.",
-		OrganizationalUnit: "Intermediate Certificates Management",
-		Country:            "NL",
-		Locality:           "Noord-Brabant",
-		Province:           "Veldhoven",
-		Intermediate:       true,
-		DNSNames:           []string{"w3.intranet.go-root.ca"},
+	certRequest := x509.CertificateRequest{
+		Subject: pkix.Name{
+			Organization:       []string{"SFTP Server CA Company Inc."},
+			OrganizationalUnit: []string{"Intermediate Certificates Management"},
+			Country:            []string{"NL"},
+			Locality:           []string{"Noord-Brabant"},
+			Province:           []string{"Veldhoven"},
+		},
+		DNSNames: []string{"w3.intranet.go-root.ca"},
 	}
 
 	RootCA, err := Load("go-root.ca")
@@ -114,7 +134,7 @@ func TestFunctionalRootCAIssueNewCertificate(t *testing.T) {
 		t.Errorf("Failed to load Root CA")
 	}
 
-	intranetCert, err := RootCA.IssueCertificate("intranet.go-root.ca", intranteIdentity)
+	intranetCert, err := RootCA.IssueCertificate("intranet.go-root.ca", &certRequest, 100)
 	if err != nil {
 		t.Log(err)
 		t.Errorf("Failed to Root CA issue new certificate (intranet.go-root.ca)")
@@ -165,14 +185,15 @@ func TestFunctionalRootCALoadCertificates(t *testing.T) {
 }
 
 func TestFunctionalIntermediateCAIssueNewCertificate(t *testing.T) {
-	id := Identity{
-		Organization:       "An Organization",
-		OrganizationalUnit: "An Organizational Unit",
-		Country:            "NL",
-		Locality:           "Noord-Brabant",
-		Province:           "Veldhoven",
-		Intermediate:       false,
-		DNSNames:           []string{"anorg.go-intermediate.ca"},
+	certRequest := x509.CertificateRequest{
+		Subject: pkix.Name{
+			Organization:       []string{"An Organization"},
+			OrganizationalUnit: []string{"An Organizational Unit"},
+			Country:            []string{"NL"},
+			Locality:           []string{"Noord-Brabant"},
+			Province:           []string{"Veldhoven"},
+		},
+		DNSNames: []string{"anorg.go-intermediate.ca"},
 	}
 
 	interCA, err := Load("go-intermediate.ca")
@@ -180,7 +201,7 @@ func TestFunctionalIntermediateCAIssueNewCertificate(t *testing.T) {
 		t.Errorf("Failed to load intermediate CA")
 	}
 
-	idCert, err := interCA.IssueCertificate("anorg.go-intermediate.ca", id)
+	idCert, err := interCA.IssueCertificate("anorg.go-intermediate.ca", &certRequest, 100)
 	if err != nil {
 		t.Error("Failed to issue certificate anorg.go-intermediate.ca")
 	}

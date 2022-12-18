@@ -1,11 +1,15 @@
 package goca_test
 
 import (
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
+	"time"
 
-	"github.com/kairoaraujo/goca"
+	"github.com/neb42/goca"
 )
 
 func Example_minimal() {
@@ -13,18 +17,26 @@ func Example_minimal() {
 	// Define the GOCAPTH (Default is current dir)
 	os.Setenv("CAPATH", "/opt/GoCA/CA")
 
-	// RootCAIdentity for creation
-	rootCAIdentity := goca.Identity{
-		Organization:       "GO CA Root Company Inc.",
-		OrganizationalUnit: "Certificates Management",
-		Country:            "NL",
-		Locality:           "Noord-Brabant",
-		Province:           "Veldhoven",
-		Intermediate:       false,
+	// Root cert for creation
+	rootCert := x509.Certificate{
+		SerialNumber: big.NewInt(1234),
+		Subject: pkix.Name{
+			Organization:       []string{"GO CA Root Company Inc."},
+			OrganizationalUnit: []string{"Certificates Management"},
+			Country:            []string{"NL"},
+			Locality:           []string{"Noord-Brabant"},
+			Province:           []string{"Veldhoven"},
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().AddDate(10, 0, 0),
+		IsCA:        true,
+		DNSNames:    []string{"www.go-root.ca", "secure.go-root.ca"},
+		ExtKeyUsage: []x509.ExtKeyUsage{},
+		KeyUsage:    x509.KeyUsageCRLSign | x509.KeyUsageCertSign,
 	}
 
 	// Create the New Root CA or loads existent from disk ($CAPATH)
-	RootCA, err := goca.New("mycompany.com", rootCAIdentity)
+	RootCA, err := goca.New("mycompany.com", &rootCert)
 	if err != nil {
 		// Loads in case it exists
 		fmt.Println("Loading CA")
@@ -42,17 +54,18 @@ func Example_minimal() {
 	}
 
 	// Issue certificate for example intranet server
-	intranetIdentity := goca.Identity{
-		Organization:       "Intranet Company Inc.",
-		OrganizationalUnit: "Global Intranet",
-		Country:            "NL",
-		Locality:           "Noord-Brabant",
-		Province:           "Veldhoven",
-		Intermediate:       false,
-		DNSNames:           []string{"w3.intranet.example.com", "www.intranet.example.com"},
+	certRequest := x509.CertificateRequest{
+		Subject: pkix.Name{
+			Organization:       []string{"Intranet Company Inc."},
+			OrganizationalUnit: []string{"Global Intranet"},
+			Country:            []string{"NL"},
+			Locality:           []string{"Noord-Brabant"},
+			Province:           []string{"Veldhoven"},
+		},
+		DNSNames: []string{"w3.intranet.example.com", "www.intranet.example.com"},
 	}
 
-	intranetCert, err := RootCA.IssueCertificate("intranet.example.com", intranetIdentity)
+	intranetCert, err := RootCA.IssueCertificate("intranet.example.com", &certRequest, 100)
 	if err != nil {
 		log.Fatal(err)
 	}
