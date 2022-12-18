@@ -1,9 +1,15 @@
+Forked from https://github.com/kairoaraujo/goca 
+
+* Allows for better certificate customisation, instead of just idenetity
+* Remove rest api
+
+Readme not updated yet
+
 # Go Certificate Authority management package
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/kairoaraujo/goca)](https://goreportcard.com/report/github.com/kairoaraujo/goca)
-[![Build Status](https://github.com/kairoaraujo/goca/workflows/tests/badge.svg)](https://github.com/kairoaraujo/goca/actions)
-[![Go Reference](https://pkg.go.dev/badge/github.com/kairoaraujo/goca.svg)](https://pkg.go.dev/github.com/kairoaraujo/goca)
-[![Docker Pulls](https://img.shields.io/docker/pulls/kairoaraujo/goca.svg?maxAge=604800)](https://hub.docker.com/r/kairoaraujo/goca/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/neb42/goca)](https://goreportcard.com/report/github.com/neb42/goca)
+[![Build Status](https://github.com/neb42/goca/workflows/tests/badge.svg)](https://github.com/neb42/goca/actions)
+[![Go Reference](https://pkg.go.dev/badge/github.com/neb42/goca.svg)](https://pkg.go.dev/github.com/neb42/goca)
 
 
 GocA provides a Certificate Authority (CA) framework managing, a Simple PKI.
@@ -17,14 +23,13 @@ Certificates Request List (CRL).
 
 **Content**:
 
-- [GoCA Docker Container](#GoCA-Docker-Container)
-- [GoCA Package](#GoCA-Package)
-- [GoCA HTTP REST API package](#GoCA-HTTP-REST-API)
+- [Go Certificate Authority management package](#go-certificate-authority-management-package)
+  - [GoCA Package](#goca-package)
 
 ## GoCA Package
 
 ```shell
-go get http://github.com/kairoaraujo/goca
+go get http://github.com/neb42/goca
 ```
 
 All files are store in the ``$CAPATH``. The ``$CAPATH`` is an environment
@@ -117,19 +122,4 @@ fmt.Println(intranetCert.GetCertificate())
 fmt.Println(RootCA.ListCertificates())
 ```
 
-## GoCA HTTP REST API
 
-GoCA also provides an implementation using HTTP REST API.
-
-This is available in [``rest-api``](rest-api/) folder.
-
-## GoCA Docker Container
-
-GoCA Docker ready to use HTTP Rest API that uses mainly crypto/x509 to manage Certificate Authorities and Certificates such
-as a simple PKI Service.
-
-The API Documentation is online available at http://kairoaraujo.github.io/goca/.
-
-More details in [Docker README](DOCKER_README.md).
-
-GoCA Docker Image is available at https://hub.docker.com/r/kairoaraujo/goca/
