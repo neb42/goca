@@ -21,7 +21,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 
-	storage "github.com/kairoaraujo/goca/_storage"
+	storage "github.com/neb42/goca/_storage"
 )
 
 // CA represents the basic CA data
@@ -178,9 +178,9 @@ func (c *CA) SignCSR(csr x509.CertificateRequest, valid int) (certificate Certif
 // IssueCertificate creates a new certificate
 //
 // It is import create an Identity{} with Certificate Client/Server information.
-func (c *CA) IssueCertificate(commonName string, certRequest *x509.CertificateRequest) (certificate Certificate, err error) {
+func (c *CA) IssueCertificate(commonName string, certRequest *x509.CertificateRequest, valid int) (certificate Certificate, err error) {
 
-	certificate, err = c.issueCertificate(commonName, certRequest)
+	certificate, err = c.issueCertificate(commonName, certRequest, valid)
 
 	return certificate, err
 }

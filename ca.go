@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"time"
 
-	storage "github.com/kairoaraujo/goca/_storage"
-	"github.com/kairoaraujo/goca/cert"
-	"github.com/kairoaraujo/goca/key"
+	storage "github.com/neb42/goca/_storage"
+	"github.com/neb42/goca/cert"
+	"github.com/neb42/goca/key"
 )
 
 // Const
@@ -318,7 +318,7 @@ func (c *CA) signCSR(csr x509.CertificateRequest, valid int) (certificate Certif
 
 }
 
-func (c *CA) issueCertificate(commonName string, certRequest *x509.CertificateRequest) (certificate Certificate, err error) {
+func (c *CA) issueCertificate(commonName string, certRequest *x509.CertificateRequest, valid int) (certificate Certificate, err error) {
 
 	var (
 		caCertsDir      string = filepath.Join(c.CommonName, "certs")
@@ -330,7 +330,7 @@ func (c *CA) issueCertificate(commonName string, certRequest *x509.CertificateRe
 	certificate.CACertificate = c.Data.Certificate
 	certificate.caCertificate = c.Data.certificate
 
-	certKeys, err := key.CreateKeys(c.CommonName, commonName, storage.CreationTypeCertificate, id.KeyBitSize)
+	certKeys, err := key.CreateKeys(c.CommonName, commonName, storage.CreationTypeCertificate, keyBitSize)
 	if err != nil {
 		return certificate, err
 	}
@@ -363,7 +363,7 @@ func (c *CA) issueCertificate(commonName string, certRequest *x509.CertificateRe
 
 	certificate.csr = *csr
 	certificate.CSR = string(csrString)
-	certBytes, err := cert.CASignCSR(c.CommonName, *csr, c.Data.certificate, &c.Data.privateKey, id.Valid, storage.CreationTypeCertificate)
+	certBytes, err := cert.CASignCSR(c.CommonName, *csr, c.Data.certificate, &c.Data.privateKey, valid, storage.CreationTypeCertificate)
 	if err != nil {
 		return certificate, err
 	}

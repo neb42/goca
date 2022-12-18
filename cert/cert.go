@@ -41,8 +41,8 @@ import (
 	"path/filepath"
 	"time"
 
-	storage "github.com/kairoaraujo/goca/_storage"
-	"github.com/kairoaraujo/goca/key"
+	storage "github.com/neb42/goca/_storage"
+	"github.com/neb42/goca/key"
 )
 
 const (
@@ -242,7 +242,6 @@ func LoadCert(certString []byte) (*x509.Certificate, error) {
 func CASignCSR(CACommonName string, csr x509.CertificateRequest, caCert *x509.Certificate, privKey *rsa.PrivateKey, valid int, creationType storage.CreationType) (cert []byte, err error) {
 	if valid == 0 {
 		valid = DefaultValidCert
-
 	} else if valid > MaxValidCert || valid < MinValidCert {
 		return nil, errors.New("the certificate valid (min/max) is not between 1 - 825")
 	}
@@ -275,7 +274,7 @@ func CASignCSR(CACommonName string, csr x509.CertificateRequest, caCert *x509.Ce
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(0, 0, valid),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 	}
 
 	csrTemplate.DNSNames = csr.DNSNames

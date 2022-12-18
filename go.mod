@@ -1,4 +1,4 @@
-module github.com/kairoaraujo/goca
+module github.com/neb42/goca
 
 go 1.15
 
