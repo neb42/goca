@@ -3,6 +3,9 @@ Forked from https://github.com/kairoaraujo/goca
 * Allows for better certificate customisation, instead of just idenetity
 * Remove rest api
 
+TODO:
+* Support different key algorithms 
+
 Readme not updated yet
 
 # Go Certificate Authority management package
