@@ -275,9 +275,11 @@ func CASignCSR(CACommonName string, csr x509.CertificateRequest, caCert *x509.Ce
 		NotAfter:     time.Now().AddDate(0, 0, valid),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
-	}
 
-	csrTemplate.DNSNames = csr.DNSNames
+		DNSNames:    csr.DNSNames,
+		IPAddresses: csr.IPAddresses,
+		URIs:        csr.URIs,
+	}
 
 	cert, err = x509.CreateCertificate(rand.Reader, &csrTemplate, caCert, csrTemplate.PublicKey, privKey)
 	if err != nil {
