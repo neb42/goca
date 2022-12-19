@@ -81,7 +81,7 @@ func NewCA(commonName, parentCommonName string, cert *x509.Certificate) (ca CA, 
 		CommonName: commonName,
 	}
 
-	err = ca.create(commonName, parentCommonName, cert, parentCommonName == "")
+	err = ca.create(commonName, parentCommonName, cert, parentCommonName != "")
 	if err != nil {
 		return ca, err
 	}
