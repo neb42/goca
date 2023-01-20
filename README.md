@@ -5,6 +5,7 @@ Forked from https://github.com/kairoaraujo/goca
 
 TODO:
 * Support different key algorithms 
+* Read/Write CA Bundle
 
 Readme not updated yet
 
